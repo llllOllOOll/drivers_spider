@@ -1,2 +1,5 @@
 .zig-cache/
+.kamal
+config/
 zig-out/
+DEPLOY.md
