@@ -1,6 +1,5 @@
 const std = @import("std");
-const db = @import("db/conn.zig");
-const db_pool = @import("db/pool.zig");
+const spg = @import("spider").pg;
 const db_migrate = @import("db/migrate.zig");
 const spider = @import("spider");
 const DriverController = @import("driver_controller.zig");
@@ -18,9 +17,13 @@ pub fn main(init: std.process.Init) !void {
     const allocator = init.gpa;
     const io = init.io;
 
-    var conn = try db.connect(allocator);
-    defer conn.deinit();
-    db_pool.init(&conn);
+    try spg.init(allocator, .{
+        .host = "postgres-main",
+        .user = "n8n",
+        .password = "zivyarsql_n8n@5123",
+        .database = "spider_db",
+    });
+    defer spg.deinit();
     try db_migrate.run();
 
     const repo = DriverRepository.init(allocator);

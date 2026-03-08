@@ -389,28 +389,28 @@ exe.root_module.<span class="f">linkSystemLibrary</span>(<span class="s">"pq"</s
                     <p class="mt-2"><a href="/chat" target="_blank" style="color:#ffc439;font-size:0.85rem;" onclick="event.stopPropagation()">→ Live Demo</a></p>
                 </div>
             </div>
-<div class="column is-3">
-<div class="feature-card p-5"
-hx-get="/docs/postgres"
-hx-target="#feature-detail"
-hx-swap="innerHTML"
-onclick="document.querySelectorAll('.feature-card').forEach(c=>c.classList.remove('active'));this.classList.add('active')">
-<p class="accent has-text-weight-bold">PostgreSQL</p>
-<p class="has-text-grey-light">Built-in PG client with pooling</p>
-<p class="mt-2"><a href="https://spiderme.org/drivers" target="_blank" style="color:#ffc439;font-size:0.85rem;" onclick="event.stopPropagation()">→ Live Demo</a></p>
-</div>
-</div>
-<div class="column is-3">
-<div class="feature-card p-5"
-hx-get="/docs/metrics"
-hx-target="#feature-detail"
-hx-swap="innerHTML"
-onclick="document.querySelectorAll('.feature-card').forEach(c=>c.classList.remove('active'));this.classList.add('active')">
-<p class="accent has-text-weight-bold">Metrics</p>
-<p class="has-text-grey-light">Internal metrics + dashboard</p>
-<p class="mt-2"><a href="https://spiderme.org/_spider/dashboard" target="_blank" style="color:#ffc439;font-size:0.85rem;" onclick="event.stopPropagation()">→ Live Demo</a></p>
-</div>
-</div>
+            <div class="column is-3">
+                <div class="feature-card p-5"
+                     hx-get="/docs/postgres"
+                     hx-target="#feature-detail"
+                     hx-swap="innerHTML"
+                     onclick="document.querySelectorAll('.feature-card').forEach(c=>c.classList.remove('active'));this.classList.add('active')">
+                    <p class="accent has-text-weight-bold">PostgreSQL</p>
+                    <p class="has-text-grey-light">Built-in PG client with pooling</p>
+                    <p class="mt-2"><a href="https://spiderme.org/drivers" target="_blank" style="color:#ffc439;font-size:0.85rem;" onclick="event.stopPropagation()">→ Live Demo</a></p>
+                </div>
+            </div>
+            <div class="column is-3">
+                <div class="feature-card p-5"
+                     hx-get="/docs/metrics"
+                     hx-target="#feature-detail"
+                     hx-swap="innerHTML"
+                     onclick="document.querySelectorAll('.feature-card').forEach(c=>c.classList.remove('active'));this.classList.add('active')">
+                    <p class="accent has-text-weight-bold">Metrics</p>
+                    <p class="has-text-grey-light">Internal metrics + dashboard</p>
+                    <p class="mt-2"><a href="https://spiderme.org/_spider/dashboard" target="_blank" style="color:#ffc439;font-size:0.85rem;" onclick="event.stopPropagation()">→ Live Demo</a></p>
+                </div>
+            </div>
             <div class="column is-3">
                 <div class="feature-card p-5"
                      hx-get="/docs/logger"
@@ -607,36 +607,65 @@ ws.onmessage = (e) => {
     <h3 class="title is-4 has-text-white">PostgreSQL</h3>
     <p class="has-text-grey-light mb-4">
         Built-in PostgreSQL client via <code>spider.pg</code>, wrapping libpq.
-        Acquire a connection from the pool, run a query, iterate results by row and column index.
+        Initialize once at startup — connection pooling and acquire/release are handled internally.
+        Use <code>mapAll</code> to automatically map query results to Zig structs via comptime reflection.
     </p>
     <div class="code-block"><pre>
 <span class="k">const</span> spg = <span class="f">@import</span>(<span class="s">"spider"</span>).pg;
 
+<span class="c">// db.zig — configure once, app-wide</span>
+<span class="k">const</span> app_config = spg.DbConfig{
+    .host     = <span class="s">"localhost"</span>,
+    .user     = <span class="s">"spider"</span>,
+    .password = <span class="s">"spider_123"</span>,
+    .database = <span class="s">"spider_db"</span>,
+};
+
+<span class="k">pub fn</span> <span class="f">init</span>(allocator: std.mem.Allocator) !<span class="k">void</span> {
+    <span class="k">return</span> spg.<span class="f">init</span>(allocator, app_config);
+}
+
+<span class="k">pub const</span> deinit = spg.deinit;
+<span class="k">pub const</span> query   = spg.query;
+<span class="k">pub const</span> exec    = spg.exec;
+
+<span class="c">// main.zig — initialize once at startup</span>
+<span class="k">try</span> db.<span class="f">init</span>(allocator);
+<span class="k">defer</span> db.<span class="f">deinit</span>();
+
+<span class="c">// models/driver.zig</span>
+<span class="k">pub const</span> Driver = <span class="k">struct</span> {
+    id:     i32,
+    name:   []<span class="k">const</span> u8,
+    team:   []<span class="k">const</span> u8,
+    number: i32,
+};
+
+<span class="c">// driver_repository.zig — automatic struct mapping</span>
 <span class="k">pub fn</span> <span class="f">findAll</span>(self: DriverRepository) ![]Driver {
-    <span class="k">const</span> pool = db_pool.<span class="f">get</span>();
-    <span class="k">const</span> conn = <span class="k">try</span> pool.<span class="f">acquire</span>();
-    <span class="k">defer</span> pool.<span class="f">release</span>(conn);
-
-    <span class="k">var</span> result = spg.<span class="f">query</span>(conn,
+    <span class="k">var</span> result = <span class="k">try</span> db.<span class="f">query</span>(
         <span class="s">"SELECT id, name, team, number FROM drivers ORDER BY number"</span>
-    ) <span class="k">catch</span> |err| {
-        std.log.<span class="f">err</span>(<span class="s">"query failed: {}"</span>, .{err});
-        <span class="k">return</span> err;
-    };
+    );
     <span class="k">defer</span> result.<span class="f">deinit</span>();
+    <span class="k">return</span> result.<span class="f">mapAll</span>(Driver, self.allocator);
+}
 
-    <span class="k">const</span> count = result.<span class="f">rows</span>();
-    <span class="k">if</span> (count == <span class="n">0</span>) <span class="k">return</span> &[_]Driver{};
+<span class="c">// parameterized query — SQL injection safe</span>
+<span class="k">pub fn</span> <span class="f">findByTeam</span>(self: DriverRepository, team: []<span class="k">const</span> u8) ![]Driver {
+    <span class="k">var</span> result = <span class="k">try</span> db.<span class="f">queryParams</span>(
+        <span class="s">"SELECT id, name, team, number FROM drivers WHERE team = $1"</span>,
+        &[_][]<span class="k">const</span> u8{team},
+    );
+    <span class="k">defer</span> result.<span class="f">deinit</span>();
+    <span class="k">return</span> result.<span class="f">mapAll</span>(Driver, self.allocator);
+}
 
-    <span class="k">const</span> drivers = <span class="k">try</span> self.allocator.<span class="f">alloc</span>(Driver, count);
-    <span class="k">for</span> (drivers, <span class="n">0</span>..) |*driver, i| {
-        driver.* = .{
-            .id   = <span class="k">try</span> std.fmt.<span class="f">parseInt</span>(i32, result.<span class="f">getValue</span>(i, <span class="n">0</span>), <span class="n">10</span>),
-            .name = <span class="k">try</span> self.allocator.<span class="f">dupe</span>(u8, result.<span class="f">getValue</span>(i, <span class="n">1</span>)),
-        };
-    }
-    <span class="k">return</span> drivers;
-}</pre></div>
+<span class="c">// env var override — priority: explicit > env var > default</span>
+<span class="k">try</span> spg.<span class="f">init</span>(allocator, .{});                         <span class="c">// reads POSTGRES_* env vars</span>
+<span class="k">try</span> spg.<span class="f">init</span>(allocator, .{ .database = <span class="s">"test_db"</span> });  <span class="c">// partial override</span></pre></div>
+    <p class="mt-4">
+        <a href="https://spiderme.org/drivers" target="_blank" style="color:#ffc439;font-weight:bold;">→ Live Demo</a>
+    </p>
 </div>
 {% end %}
 
@@ -682,30 +711,27 @@ std.log.<span class="f">err</span>(<span class="s">"query failed: {}"</span>, .{
 <div class="detail-box">
     <h3 class="title is-4 has-text-white">Pooling</h3>
     <p class="has-text-grey-light mb-4">
-        Spider provides a connection pool for PostgreSQL via <code>spider.pg.Pool</code>.
-        Initialize once at startup and share across all requests via a singleton pattern.
+        Spider manages the PostgreSQL connection pool internally via <code>spider.pg</code>.
+        No manual acquire/release needed — <code>query()</code>, <code>queryParams()</code>, and <code>exec()</code> handle it automatically.
+        The pool size defaults to 10 and can be configured via <code>DbConfig</code>.
     </p>
     <div class="code-block"><pre>
-<span class="c">// db/pool.zig — singleton</span>
-<span class="k">const</span> spider_pg = <span class="f">@import</span>(<span class="s">"spider"</span>).pg;
-<span class="k">var</span> pool: ?*spider_pg.Pool = <span class="k">null</span>;
+<span class="c">// Pool is invisible — Spider manages acquire/release internally</span>
+<span class="k">var</span> result = <span class="k">try</span> db.<span class="f">query</span>(<span class="s">"SELECT ..."</span>);   <span class="c">// acquires connection</span>
+<span class="k">defer</span> result.<span class="f">deinit</span>();                        <span class="c">// releases connection</span>
 
-<span class="k">pub fn</span> <span class="f">init</span>(p: *spider_pg.Pool) <span class="k">void</span> {
-    pool = p;
-}
+<span class="c">// Configure pool size via DbConfig</span>
+<span class="k">try</span> spg.<span class="f">init</span>(allocator, .{
+    .host      = <span class="s">"localhost"</span>,
+    .database  = <span class="s">"spider_db"</span>,
+    .pool_size = <span class="n">20</span>,   <span class="c">// default: 10</span>
+});
 
-<span class="k">pub fn</span> <span class="f">get</span>() *spider_pg.Pool {
-    <span class="k">return</span> pool <span class="k">orelse</span> <span class="f">@panic</span>(<span class="s">"DB pool not initialized"</span>);
-}
-
-<span class="c">// main.zig — initialize once at startup</span>
-<span class="k">var</span> conn = <span class="k">try</span> db.<span class="f">connect</span>(allocator);
-<span class="k">defer</span> conn.<span class="f">deinit</span>();
-db_pool.<span class="f">init</span>(&amp;conn);
-
-<span class="c">// any repository — acquire and release per request</span>
+<span class="c">// Low-level API — available for advanced use cases</span>
+<span class="k">const</span> pool = spg.Pool;
 <span class="k">const</span> conn = <span class="k">try</span> pool.<span class="f">acquire</span>();
-<span class="k">defer</span> pool.<span class="f">release</span>(conn);</pre></div>
+<span class="k">defer</span> pool.<span class="f">release</span>(conn);
+<span class="k">var</span> result = <span class="k">try</span> spg.<span class="f">queryConn</span>(conn, <span class="s">"SELECT ..."</span>);</pre></div>
 </div>
 {% end %}
 
@@ -881,14 +907,12 @@ server.<span class="f">use</span>(web.corsMiddleware)      <span class="c">// Ad
         res.status = .unauthorized;
         <span class="k">return</span> res;
     }
-    <span class="c">// Continue to next middleware or handler</span>
     <span class="k">return</span> <span class="f">next</span>(alc, req);
 }
 
 <span class="c">// Middleware that modifies response</span>
 <span class="k">fn</span> <span class="f">corsMiddleware</span>(alc: std.mem.Allocator, req: *spider.Request, next: spider.NextFn) !spider.Response {
-    <span class="k">var</span> res = <span class="k">try</span> <span class="f">next</span>(alc, req);  <span class="c">// Get response from handler</span>
-    <span class="c">// Add headers to the response</span>
+    <span class="k">var</span> res = <span class="k">try</span> <span class="f">next</span>(alc, req);
     <span class="k">try</span> res.headers.<span class="f">set</span>(alc, <span class="s">"Access-Control-Allow-Origin"</span>, <span class="s">"*"</span>);
     <span class="k">try</span> res.headers.<span class="f">set</span>(alc, <span class="s">"Access-Control-Allow-Methods"</span>, <span class="s">"GET,POST,PUT,DELETE"</span>);
     <span class="k">return</span> res;
@@ -918,7 +942,6 @@ Templates are embedded at compile time via <code>@embedFile</code>.
 }
 
 <span class="c">// Template with loop (e.g., listing drivers)</span>
-<span class="c">// Driver struct: { id: i32, name: []const u8, team: []const u8, number: i32 }</span>
 <span class="k">const</span> html = <span class="k">try</span> spider.template.<span class="f">renderBlock</span>(tmpl, <span class="s">"drivers"</span>, .{
     .drivers = drivers,
 }, alc);
@@ -940,7 +963,7 @@ Templates are embedded at compile time via <code>@embedFile</code>.
 {% endif %}
 
 <span class="c">&lt;!-- Include partial templates --&gt;</span>
-{% include <span class="s">"views/header.html""</span> %}</pre></div>
+{% include <span class="s">"views/header.html"</span> %}</pre></div>
 </div>
 {% end %}
 

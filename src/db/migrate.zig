@@ -1,13 +1,8 @@
 const std = @import("std");
 const spg = @import("spider").pg;
-const db_pool = @import("pool.zig");
 
 pub fn run() !void {
-    const pool = db_pool.get();
-    const conn = try pool.acquire();
-    defer pool.release(conn);
-
-    var create = try spg.query(conn, "CREATE TABLE IF NOT EXISTS drivers (" ++
+    var create = try spg.query("CREATE TABLE IF NOT EXISTS drivers (" ++
         "id SERIAL PRIMARY KEY," ++
         "name TEXT NOT NULL," ++
         "team TEXT NOT NULL," ++
@@ -16,7 +11,7 @@ pub fn run() !void {
     create.deinit();
 
     // Only seed if table is empty
-    var count_result = try spg.query(conn, "SELECT COUNT(*) FROM drivers");
+    var count_result = try spg.query("SELECT COUNT(*) FROM drivers");
     defer count_result.deinit();
 
     const count = try std.fmt.parseInt(u64, count_result.getValue(0, 0), 10);
@@ -25,7 +20,7 @@ pub fn run() !void {
         return;
     }
 
-    var seed = try spg.query(conn, "INSERT INTO drivers (name, team, number) VALUES " ++
+    var seed = try spg.query("INSERT INTO drivers (name, team, number) VALUES " ++
         "('Lando Norris', 'McLaren', 4)," ++
         "('Oscar Piastri', 'McLaren', 81)," ++
         "('Lewis Hamilton', 'Ferrari', 44)," ++
@@ -42,7 +37,7 @@ pub fn run() !void {
         "('Franco Colapinto', 'Alpine', 43)," ++
         "('Esteban Ocon', 'Haas', 31)," ++
         "('Oliver Bearman', 'Haas', 87)," ++
-        "('Nico Hulkenberg', 'Audi', 27)," ++
+        "('极速赛车群', 'Audi', 27)," ++
         "('Gabriel Bortoleto', 'Audi', 5)," ++
         "('Carlos Sainz', 'Williams', 55)," ++
         "('Alex Albon', 'Williams', 23)," ++
