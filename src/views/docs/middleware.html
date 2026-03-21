@@ -1,0 +1,31 @@
+{% block "content" %}
+<h1>Middleware</h1>
+<p>Middleware functions run before every request handler. Chain them with <code>server.use(fn)</code>. Each middleware receives the allocator, request, and a <code>next</code> function to continue the chain.</p>
+
+<div class="code-block">
+    <div class="code-block-bar"><span class="code-block-lang">zig</span></div>
+    <pre><span class="c">// Built-in middleware</span>
+<span class="k">const</span> web = spider.web;
+
+server.<span class="f">use</span>(web.corsMiddleware)
+      .<span class="f">use</span>(web.loggerMiddleware)
+      .<span class="f">use</span>(web.authMiddleware)
+      .<span class="f">get</span>(<span class="s">"/"</span>, homeHandler)
+      .<span class="f">listen</span>() <span class="k">catch</span> |err| <span class="k">return</span> err;
+
+<span class="c">// Custom middleware</span>
+<span class="k">fn</span> <span class="f">authMiddleware</span>(
+    alc: std.mem.Allocator,
+    req: *spider.Request,
+    next: spider.NextFn,
+) !spider.Response {
+    <span class="k">const</span> key = req.<span class="f">header</span>(<span class="s">"x-api-key"</span>);
+    <span class="k">if</span> (key == <span class="k">null</span>) {
+        <span class="k">var</span> res = <span class="k">try</span> spider.Response.<span class="f">text</span>(alc, <span class="s">"Unauthorized"</span>);
+        res.status = .unauthorized;
+        <span class="k">return</span> res;
+    }
+    <span class="k">return</span> <span class="f">next</span>(alc, req);
+}</pre>
+</div>
+{% end %}

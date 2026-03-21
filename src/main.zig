@@ -6,6 +6,7 @@ const DriverController = @import("driver_controller.zig");
 const DriverRepository = @import("driver_repository.zig");
 const DriverUsecase = @import("driver_usecase.zig");
 const DocsController = @import("docs_controller.zig").DocsController;
+const IndexController = @import("index_controller.zig").IndexController;
 const ChatController = @import("chat_controller.zig").ChatController;
 var driverController: DriverController = undefined;
 
@@ -36,7 +37,7 @@ pub fn main(init: std.process.Init) !void {
     server
         .get("/assets/*", spider.static.serve)
         .get("/drivers", getDrivers)
-        .get("/", DocsController.index)
+        .get("/", IndexController.index)
         .get("/ping", pingHandler)
         .get("/chat", ChatController.chatPage)
         .get("/docs/router", DocsController.docRouter)
