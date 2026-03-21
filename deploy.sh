@@ -111,72 +111,22 @@ echo "Starting new container with Traefik labels..."
 sudo docker run -d \
     --name "$CONTAINER" \
     --network "$NETWORK" \
+    -p 3000:3000 \
+    -e POSTGRES_HOST=postgres-main \
+    -e POSTGRES_USER=n8n \
+    -e POSTGRES_PASSWORD="zivyarsql_n8n@5123" \
+    -e POSTGRES_DB=spider_db \
     --label "traefik.enable=true" \
-    --label "traefik.http.routers.spiderme.rule=Host(\`spiderme.org\`)" \
+    --label "traefik.http.routers.spiderme.rule=Host(\`spiderme.org\`) || Host(\`www.spiderme.org\`)" \
     --label "traefik.http.routers.spiderme.entrypoints=websecure" \
+    --label "traefik.http.routers.spiderme.tls=true" \
     --label "traefik.http.routers.spiderme.tls.certresolver=letsencrypt" \
     --label "traefik.http.routers.spiderme.middlewares=spider-headers" \
-    --label "traefik.http.middlewares.spider-headers.headers.customResponseHeaders.X-Request=*" \
-    --label "traefik.http.middlewares.spider-headers.headers.customResponseHeaders.X-HX-Request=*" \
+    --label "traefik.http.services.spiderme.loadbalancer.server.port=3000" \
     --label "traefik.http.middlewares.spider-headers.headers.customResponseHeaders.HX-Request=*" \
     "$IMAGE"
 
 echo "Deploy finished! Check https://spiderme.org"
-EOF
-}
-
-# Show usage information
-usage() {
-    echo "SpiderMe Deployment Script"
-    echo ""
-    echo "Usage: $0 [command]"
-    echo ""
-    echo "Commands:"
-    echo "  build      - Build Docker image locally"
-    echo "  push       - Push image to Docker Hub"
-    echo "  deploy     - Deploy to production server"
-    echo "  all        - Build, push, and deploy"
-    echo "  help       - Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0 build      # Build image locally"
-    echo "  $0 push       # Push to Docker Hub"
-    echo "  $0 all        # Complete pipeline"
-}
-
-# Main script
-main() {
-    case "${1:-help}" in
-        "build")
-            check_docker
-            build_image
-            ;;
-        "push")
-            check_docker
-            push_image
-            ;;
-        "deploy")
-            deploy_production
-            ;;
-        "all")
-            check_docker
-            build_image
-            push_image
-            deploy_production
-            ;;
-        "help"|""|"--help"|"-h")
-            usage
-            ;;
-        *)
-            error "Unknown command: $1"
-            usage
-            exit 1
-            ;;
-    esac
-}
-
-# Run main function with all arguments
-main "$@"
 
 # Instructions for server deployment
 cat << 'EOF'
@@ -200,13 +150,18 @@ echo "Starting new container with Traefik labels..."
 sudo docker run -d \
     --name "$CONTAINER" \
     --network "$NETWORK" \
+    -p 3000:3000 \
+    -e POSTGRES_HOST=postgres-main \
+    -e POSTGRES_USER=n8n \
+    -e POSTGRES_PASSWORD="zivyarsql_n8n@5123" \
+    -e POSTGRES_DB=spider_db \
     --label "traefik.enable=true" \
-    --label "traefik.http.routers.spiderme.rule=Host(\`spiderme.org\`)" \
+    --label "traefik.http.routers.spiderme.rule=Host(\`spiderme.org\`) || Host(\`www.spiderme.org\`)" \
     --label "traefik.http.routers.spiderme.entrypoints=websecure" \
+    --label "traefik.http.routers.spiderme.tls=true" \
     --label "traefik.http.routers.spiderme.tls.certresolver=letsencrypt" \
     --label "traefik.http.routers.spiderme.middlewares=spider-headers" \
-    --label "traefik.http.middlewares.spider-headers.headers.customResponseHeaders.X-Request=*" \
-    --label "traefik.http.middlewares.spider-headers.headers.customResponseHeaders.X-HX-Request=*" \
+    --label "traefik.http.services.spiderme.loadbalancer.server.port=3000" \
     --label "traefik.http.middlewares.spider-headers.headers.customResponseHeaders.HX-Request=*" \
     "$IMAGE"
 
