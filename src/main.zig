@@ -2,21 +2,18 @@ const std = @import("std");
 const spg = @import("spider").pg;
 const db_migrate = @import("db/migrate.zig");
 const spider = @import("spider");
-const DriverController = @import("driver_controller.zig");
-const DriverRepository = @import("driver_repository.zig");
-const DriverUsecase = @import("driver_usecase.zig");
+// const DriverController = @import("driver_controller.zig");
+// const DriverRepository = @import("driver_repository.zig");
+// const DriverUsecase = @import("driver_usecase.zig");
 const DocsController = @import("docs_controller.zig").DocsController;
 const IndexController = @import("index_controller.zig").IndexController;
 const ChatController = @import("chat_controller.zig").ChatController;
 const home = @import("features/home/controller.zig");
 const docs = @import("features/docs/controller.zig");
-var driverController: DriverController = undefined;
+const drivers = @import("features/drivers/controller.zig");
+// var driverController: DriverController = undefined;
 
 const templates = @import("embedded_templates.zig").EmbeddedTemplates;
-
-fn getDrivers(alc: std.mem.Allocator, req: *spider.Request) !spider.Response {
-    return driverController.getDrivers(alc, req);
-}
 
 pub fn main(init: std.process.Init) !void {
     const allocator = init.gpa;
@@ -25,10 +22,6 @@ pub fn main(init: std.process.Init) !void {
     try spider.loadEnv(allocator, ".env");
     try spg.init(allocator, io, .{});
     defer spg.deinit();
-
-    const repo = DriverRepository.init(allocator);
-    const usecase = DriverUsecase.init(repo);
-    driverController = DriverController.init(allocator, usecase);
 
     try spider.initWsHub(allocator, io);
     defer spider.deinitWsHub(allocator);
@@ -40,6 +33,7 @@ pub fn main(init: std.process.Init) !void {
 
     server
         .get("/assets/*", spider.static.serve)
+        .get("/drivers", drivers.index)
         .get("/", home.index)
         .get("/docs", docs.index)
         .get("/docs/router", docs.router)
