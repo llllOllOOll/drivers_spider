@@ -2,16 +2,12 @@ const std = @import("std");
 const spg = @import("spider").pg;
 const db_migrate = @import("db/migrate.zig");
 const spider = @import("spider");
-// const DriverController = @import("driver_controller.zig");
-// const DriverRepository = @import("driver_repository.zig");
-// const DriverUsecase = @import("driver_usecase.zig");
 const DocsController = @import("docs_controller.zig").DocsController;
 const IndexController = @import("index_controller.zig").IndexController;
 const ChatController = @import("chat_controller.zig").ChatController;
 const home = @import("features/home/controller.zig");
 const docs = @import("features/docs/controller.zig");
 const drivers = @import("features/drivers/controller.zig");
-// var driverController: DriverController = undefined;
 
 const templates = @import("embedded_templates.zig").EmbeddedTemplates;
 
