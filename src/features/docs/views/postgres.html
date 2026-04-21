@@ -115,16 +115,12 @@ name: []<span class="k">const</span> u8,
 active: bool,
 };
 
-<span class="k">fn</span> <span class="f">usersHandler</span>(alc: std.mem.Allocator, _: *spider.Request) !spider.Response {
-<span class="c">// Use arena for per-request allocations</span>
-<span class="k">var</span> arena = std.heap.ArenaAllocator.<span class="f">init</span>(alc);
-<span class="k">defer</span> arena.<span class="f">deinit</span>();
-
-<span class="c">// Query returns []User directly — no mapAll needed!</span>
-<span class="k">const</span> users = <span class="k">try</span> db.<span class="f">query</span>(User, arena.<span class="f">allocator</span>(), 
+<span class="k">fn</span> <span class="f">usersHandler</span>(arena: std.mem.Allocator, _: *spider.Request) !spider.Response {
+<span class="c">// Spider passes arena automatically — use it directly!</span>
+<span class="k">const</span> users = <span class="k">try</span> db.<span class="f">query</span>(User, arena, 
     <span class="s">"SELECT id, email, name, active FROM users ORDER BY id"</span>, .{});
     
-<span class="k">return</span> spider.Response.<span class="f">json</span>(alc, users);
+<span class="k">return</span> spider.Response.<span class="f">json</span>(arena, users);
 }
 
 <span class="k">pub fn</span> <span class="f">main</span>(init: std.process.Init) !<span class="k">void</span> {
@@ -147,7 +143,7 @@ server.<span class="f">get</span>(<span class="s">"/users"</span>, usersHandler)
 <div class="code-block">
 <div class="code-block-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
 <pre><span class="c">// Using the new API (tested and working)</span>
-<span class="k">const</span> users = <span class="k">try</span> db.<span class="f">query</span>(User, arena.<span class="f">allocator</span>(), 
+<span class="k">const</span> users = <span class="k">try</span> db.<span class="f">query</span>(User, arena, 
     <span class="s">"SELECT id, email, name FROM users WHERE active = $1"</span>, 
     .{ .active = <span class="k">true</span> });
 
