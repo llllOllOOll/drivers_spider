@@ -33,7 +33,7 @@ pub fn main(init: std.process.Init) !void {
         .get("/docs/request", docs.request)
         .get("/docs/response", docs.response)
         .get("/docs/websocket", docs.websocket)
-        .get("/docs/postgres", docs.postgres)
+        .get("/docs/postgresql", docs.postgres)
         .get("/docs/metrics", docs.metrics)
         .get("/docs/logger", docs.logger)
         .get("/docs/pooling", docs.pooling)
