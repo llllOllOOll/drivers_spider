@@ -22,9 +22,9 @@ pub const EmbeddedTemplates = struct {
     docs_quickstart: []const u8 = @embedFile("features/docs/views/quickstart.html"),
     docs_pooling: []const u8 = @embedFile("features/docs/views/pooling.md"),
     docs_pooling_test: []const u8 = @embedFile("features/docs/views/pooling_test.html"),
-    docs_request: []const u8 = @embedFile("features/docs/views/request.html"),
     docs_templates: []const u8 = @embedFile("features/docs/views/templates.md"),
     docs_postgres: []const u8 = @embedFile("features/docs/views/postgres.md"),
+    docs_request: []const u8 = @embedFile("features/docs/views/request.md"),
     layout_home: []const u8 = @embedFile("shared/templates/layout_home.html"),
     layout_docs: []const u8 = @embedFile("shared/templates/layout_docs.html"),
 
